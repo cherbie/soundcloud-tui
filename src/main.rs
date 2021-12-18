@@ -1,4 +1,5 @@
 mod event;
+mod app;
 
 use crossterm::execute;
 use crossterm::terminal::{
@@ -11,6 +12,7 @@ use tui::widgets::{Block, Borders, Widget};
 use tui::Terminal;
 use anyhow::Result;
 
+use crate::app::{App, Route};
 
 fn close_application() -> Result<()> {
     execute!(io::stdout(), LeaveAlternateScreen)?;
@@ -29,6 +31,7 @@ async fn start_ui() -> Result<()> {
     terminal.hide_cursor()?;
 
     let events = event::Events::default();
+    let mut app = App::default();
 
     loop {
         terminal.draw(|f| {
