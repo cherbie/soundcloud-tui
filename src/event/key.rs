@@ -1,5 +1,5 @@
-use std::fmt;
 use crossterm::event;
+use std::fmt;
 
 #[derive(PartialEq, Eq, Clone, Debug, Copy, Hash)]
 pub enum Key {
@@ -54,7 +54,7 @@ impl From<event::KeyEvent> for Key {
 
             event::KeyEvent {
                 code: event::KeyCode::Char('c'),
-                .. 
+                ..
             } => Key::Char('c'),
 
             _ => Key::Unknown,
