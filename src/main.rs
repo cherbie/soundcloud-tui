@@ -1,4 +1,5 @@
 mod app;
+mod components;
 mod event;
 
 use crate::app::{render, App};
