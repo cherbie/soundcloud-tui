@@ -6,12 +6,16 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use std::io;
-use tui::backend::CrosstermBackend;
+use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::widgets::{Block, Borders};
+
 use tui::Terminal;
 
-pub async fn render(app: &mut App) -> Result<()> {
+pub async fn render<B>(app: &mut App<B>) -> Result<()>
+where
+    B: Backend,
+{
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
     enable_raw_mode()?;
@@ -21,7 +25,31 @@ pub async fn render(app: &mut App) -> Result<()> {
     terminal.hide_cursor()?;
 
     loop {
-        terminal.draw(|f| {
+        app.draw()?;
+
+        match app.events.lock().unwrap().next()? {
+            event::Event::Input(key) => {
+                if key == event::Key::Ctrl('c') {
+                    return Ok(());
+                }
+            }
+            event::Event::Tick => {}
+        };
+    }
+}
+
+impl<B> App<B>
+where
+    B: Backend,
+{
+    pub fn exit_ui(&self) -> Result<()> {
+        execute!(io::stdout(), LeaveAlternateScreen)?;
+        disable_raw_mode()?;
+        Ok(())
+    }
+
+    pub fn draw(&mut self) -> Result<()> {
+        self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
@@ -41,26 +69,14 @@ pub async fn render(app: &mut App) -> Result<()> {
             // third chunk purposefully empty
         })?;
 
-        match app.events.lock().unwrap().next()? {
-            event::Event::Input(key) => {
-                if key == event::Key::Ctrl('c') {
-                    return Ok(());
-                }
-            }
-            event::Event::Tick => {}
-        };
-    }
-}
-
-impl App {
-    pub fn exit_ui(&self) -> Result<()> {
-        execute!(io::stdout(), LeaveAlternateScreen)?;
-        disable_raw_mode()?;
         Ok(())
     }
 }
 
-impl Drop for App {
+impl<B> Drop for App<B>
+where
+    B: Backend,
+{
     #[allow(unused_must_use)]
     fn drop(&mut self) {
         self.exit_ui();

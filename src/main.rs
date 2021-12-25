@@ -7,7 +7,7 @@ use anyhow::Result;
 #[tokio::main]
 async fn main() -> Result<()> {
     // main thread
-    let mut app = App::default();
+    let mut app = App::new()?;
 
     render(&mut app).await?;
 
