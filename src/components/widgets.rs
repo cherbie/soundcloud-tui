@@ -4,6 +4,7 @@ use tui::style::{Color, Style};
 use tui::widgets::{Block, BorderType, Borders, Widget};
 
 use super::layout::{Align, Axis};
+use super::style::{BoxStyle, Padding};
 
 pub trait Component<W>
 where
@@ -11,34 +12,6 @@ where
 {
     fn widget(&self) -> W;
     fn area(&self) -> Rect;
-}
-
-#[derive(Clone, Copy)]
-pub struct Padding {
-    top: u16,
-    right: u16,
-    left: u16,
-    bottom: u16,
-}
-
-impl Default for Padding {
-    fn default() -> Self {
-        Padding {
-            top: 0,
-            right: 0,
-            left: 0,
-            bottom: 0,
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct BoxStyle {
-    height: u16,
-    width: u16,
-    min_height: u16,
-    min_width: u16,
-    padding: Padding,
 }
 
 #[derive(Clone)]
