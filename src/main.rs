@@ -1,6 +1,7 @@
 mod app;
 mod components;
 mod event;
+mod views;
 
 use crate::app::{render, App};
 use anyhow::Result;

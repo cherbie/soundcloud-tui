@@ -3,7 +3,7 @@ use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::terminal::Frame;
 use tui::widgets::{Block, Borders};
 
-use crate::components::{Button, Component};
+use crate::components::widgets::{Button, Component};
 
 pub enum View {
     Splash,
@@ -48,13 +48,13 @@ impl Route {
         let canvas = f.size();
         let height: u16 = std::cmp::min(4, canvas.height);
         let width: u16 = std::cmp::min(30, canvas.width);
-        let button = Button::default().set_area(Rect {
+        let button = Button::new(Rect {
             x: (canvas.width - width) / 2,
             y: (canvas.height - height) / 2,
             width,
             height,
         });
-        f.render_widget(button.get_widget(), button.area);
+        f.render_widget(button.widget(), button.area());
     }
 
     fn draw_home_view<B>(&self, f: &mut Frame<B>)

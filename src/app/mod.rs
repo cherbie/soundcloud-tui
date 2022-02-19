@@ -1,8 +1,7 @@
 mod render;
-mod route;
 
-use self::route::Route;
 use crate::event;
+use crate::views::route::Route;
 use anyhow::Result;
 use std::io;
 use std::sync::Mutex;
@@ -24,9 +23,11 @@ impl App<CrosstermBackend<io::Stdout>> {
     pub fn new() -> Result<Self> {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+        terminal.hide_cursor()?;
 
         Ok(App {
-            terminal: Terminal::new(backend)?,
+            terminal,
             route: Route::default(),
             events: Mutex::new(event::Events::default()),
         })

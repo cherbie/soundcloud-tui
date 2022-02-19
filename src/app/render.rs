@@ -6,21 +6,13 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use std::io;
-use tui::backend::{Backend, CrosstermBackend};
-
-use tui::Terminal;
+use tui::backend::Backend;
 
 pub async fn render<B>(app: &mut App<B>) -> Result<()>
 where
     B: Backend,
 {
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    enable_raw_mode()?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    terminal.hide_cursor()?;
+    app.start_ui()?;
 
     loop {
         app.draw()?;
@@ -40,9 +32,19 @@ impl<B> App<B>
 where
     B: Backend,
 {
+    pub fn start_ui(&mut self) -> Result<()> {
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen)?;
+        enable_raw_mode()?;
+        self.terminal.hide_cursor()?;
+
+        Ok(())
+    }
+
     pub fn exit_ui(&self) -> Result<()> {
         execute!(io::stdout(), LeaveAlternateScreen)?;
         disable_raw_mode()?;
+
         Ok(())
     }
 
