@@ -1,23 +1,15 @@
 use std::cell::Cell;
 use tui::layout::Rect;
 use tui::style::{Color, Style};
-use tui::widgets::{Block, BorderType, Borders, Widget};
+use tui::widgets::{Block, BorderType, Borders};
 
-use super::layout::{Align, Axis};
-use super::style::{BoxStyle, Padding};
-
-pub trait Component<W>
-where
-    W: Widget,
-{
-    fn widget(&self) -> W;
-    fn area(&self) -> Rect;
-}
+use super::style::{BoxStyle, FlexBox, Padding};
+use super::Component;
 
 #[derive(Clone)]
 pub struct Button<'a> {
     widget: Block<'a>,
-    focused: Cell<bool>,
+    pub focused: Cell<bool>,
     container: Cell<Rect>,
     pub style: Cell<BoxStyle>,
 }
@@ -40,6 +32,7 @@ impl<'a> Default for Button<'a> {
                 min_height: 0,
                 min_width: 0,
                 padding: Padding::default(),
+                flex: FlexBox::default(),
             }),
         }
     }
@@ -100,40 +93,13 @@ impl<'a> Button<'a> {
                 min_width: 0,
                 min_height: 0,
                 padding: Padding::default(),
+                flex: FlexBox::default(),
             }),
         }
     }
 
     pub fn set_container(self, area: Rect) -> Self {
         self.container.set(area);
-        self
-    }
-
-    pub fn set_height(self, pixels: u16) -> Self {
-        let mut d = self.style.get();
-        d.height = pixels;
-        self.style.set(d);
-        self
-    }
-
-    pub fn get_height(&self) -> u16 {
-        self.style.get().height
-    }
-
-    pub fn set_width(self, pixels: u16) -> Self {
-        let mut d = self.style.get();
-        d.width = pixels;
-        self.style.set(d);
-        self
-    }
-
-    pub fn get_width(&self) -> u16 {
-        self.style.get().width
-    }
-
-    pub fn focus(self, value: bool) -> Self {
-        self.focused.set(value);
-
         self
     }
 }

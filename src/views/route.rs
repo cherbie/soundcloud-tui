@@ -1,9 +1,12 @@
+use std::option::Option;
+use std::rc;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::terminal::Frame;
 use tui::widgets::{Block, Borders};
 
-use crate::components::widgets::{Button, Component};
+use crate::components::layout::{Dom, DomNode};
+use crate::components::{widgets::Button, Component};
 
 pub enum View {
     Splash,
@@ -18,6 +21,7 @@ pub enum Element {
 pub struct Route {
     view: View,
     focus: Element,
+    dom: Dom,
 }
 
 impl Default for Route {
@@ -25,6 +29,7 @@ impl Default for Route {
         Route {
             view: View::Splash,
             focus: Element::None,
+            dom: Dom::default(),
         }
     }
 }
@@ -48,13 +53,15 @@ impl Route {
         let canvas = f.size();
         let height: u16 = std::cmp::min(4, canvas.height);
         let width: u16 = std::cmp::min(30, canvas.width);
+
         let button = Button::new(Rect {
             x: (canvas.width - width) / 2,
             y: (canvas.height - height) / 2,
             width,
             height,
         });
-        f.render_widget(button.widget(), button.area());
+        DomNode::add_child(self.dom.root.clone(), Box::new(button));
+        Dom::render(f, &self.dom.root);
     }
 
     fn draw_home_view<B>(&self, f: &mut Frame<B>)

@@ -1,5 +1,14 @@
 pub mod layout;
-pub mod widgets;
 pub mod style;
+pub mod widgets;
 
-pub use self::widgets::Component;
+use tui::layout::Rect;
+use tui::widgets::Widget;
+
+pub trait Component<W>
+where
+    W: Widget,
+{
+    fn widget(&self) -> W;
+    fn area(&self) -> Rect;
+}

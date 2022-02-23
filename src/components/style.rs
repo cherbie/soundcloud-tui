@@ -18,10 +18,33 @@ impl Default for Padding {
 }
 
 #[derive(Clone, Copy)]
+pub enum Alignment {
+    Start,
+    Center,
+    End,
+}
+
+#[derive(Clone, Copy)]
+pub struct FlexBox {
+    pub justify_content: Alignment,
+    pub align_items: Alignment,
+}
+
+impl Default for FlexBox {
+    fn default() -> Self {
+        FlexBox {
+            justify_content: Alignment::Start,
+            align_items: Alignment::Start,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 pub struct BoxStyle {
     pub height: u16,
     pub width: u16,
     pub min_height: u16,
     pub min_width: u16,
     pub padding: Padding,
+    pub flex: FlexBox,
 }
