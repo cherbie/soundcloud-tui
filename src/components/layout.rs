@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::cell::{Cell, RefCell};
 use std::option::Option;
 use std::rc::{Rc, Weak};
@@ -9,20 +8,6 @@ use tui::terminal::Frame;
 use tui::widgets::{Block, Widget};
 
 use super::Component;
-
-pub enum Axis {
-    Mutual,
-    Vertical,
-    Horizontal,
-}
-
-pub trait Align {
-    fn center(&mut self, area: Rect, axis: Axis) -> Self;
-    fn left(&mut self, area: Rect) -> Self;
-    fn right(&mut self, area: Rect) -> Self;
-    fn top(&mut self, area: Rect) -> Self;
-    fn bottom(&mut self, area: Rect) -> Self;
-}
 
 pub struct DomNode<W>
 where
@@ -51,24 +36,15 @@ where
         }
     }
 
-    pub fn root() -> Self {
-        DomNode {
-            parent: Weak::new(),
-            component: None,
-            container: Cell::default(),
-            children: RefCell::new(Vec::new()),
-        }
-    }
-
     pub fn add_child(
         parent_rc: Rc<RefCell<DomNode<W>>>,
         component: Box<dyn Component<W>>,
-        container: Rect,
+        container: Option<Rect>,
     ) -> Rc<RefCell<DomNode<W>>> {
         let child = Rc::new(RefCell::new(DomNode::new(
             Rc::downgrade(&parent_rc),
             Some(component),
-            container,
+            container.unwrap_or(Rect::default()),
         )));
         let parent = parent_rc.borrow_mut();
         parent.children.borrow_mut().push(child.clone());
@@ -122,7 +98,18 @@ impl Dom {
             let node = c.expect("RC DomNode deleted").borrow();
             match node.component.as_deref() {
                 Some(c) => {
-                    frame.render_widget(c.widget(), c.area(node.container.get()));
+                    frame.render_widget(
+                        c.widget(),
+                        c.area(
+                            node.parent
+                                .upgrade()
+                                .as_deref()
+                                .unwrap()
+                                .borrow()
+                                .container
+                                .get(),
+                        ),
+                    );
                 }
                 None => (),
             }

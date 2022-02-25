@@ -1,5 +1,9 @@
 use super::App;
+use crate::components::layout::{Dom, DomNode};
+use crate::components::widgets::Button;
 use crate::event;
+use crate::views::route::View;
+
 use anyhow::Result;
 use crossterm::execute;
 use crossterm::terminal::{
@@ -7,6 +11,9 @@ use crossterm::terminal::{
 };
 use std::io;
 use tui::backend::Backend;
+use tui::layout::{Constraint, Direction, Layout};
+use tui::terminal::Frame;
+use tui::widgets::{Block, Borders};
 
 pub async fn render<B>(app: &mut App<B>) -> Result<()>
 where
@@ -36,7 +43,7 @@ where
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen)?;
         enable_raw_mode()?;
-        self.terminal.hide_cursor()?;
+        self.terminal.get_mut().hide_cursor()?;
 
         Ok(())
     }
@@ -48,12 +55,56 @@ where
         Ok(())
     }
 
-    pub fn draw(&mut self) -> Result<()> {
-        self.terminal.draw(|f| {
-            self.route.draw(f);
+    pub fn draw(&self) -> Result<()> {
+        self.terminal.borrow_mut().draw(|f| match self.route.view {
+            View::Splash => self.draw_splash_view(f),
+            View::Home => self.draw_home_view(f),
+            View::Login => self.draw_login_view(f),
         })?;
 
         Ok(())
+    }
+
+    fn draw_splash_view(&self, f: &mut Frame<B>)
+    where
+        B: Backend,
+    {
+        self.route.dom.root.borrow_mut().container.set(f.size());
+        DomNode::add_child(
+            self.route.dom.root.clone(),
+            Box::new(Button::default()),
+            None,
+        );
+        Dom::render(f, &self.route.dom.root);
+    }
+
+    fn draw_home_view(&self, f: &mut Frame<B>)
+    where
+        B: Backend,
+    {
+        ()
+    }
+
+    fn draw_login_view(&self, f: &mut Frame<B>)
+    where
+        B: Backend,
+    {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(10),
+                    Constraint::Percentage(80),
+                    Constraint::Percentage(10),
+                ]
+                .as_ref(),
+            )
+            .split(f.size());
+        let block = Block::default().title("Block").borders(Borders::ALL);
+        f.render_widget(block, chunks[0]);
+        let block = Block::default().title("Block 2").borders(Borders::ALL);
+        f.render_widget(block, chunks[1]);
     }
 }
 
