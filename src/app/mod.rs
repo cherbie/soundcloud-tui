@@ -1,7 +1,8 @@
 mod render;
+mod route;
 
+use self::route::Route;
 use crate::event;
-use crate::views::route::Route;
 use anyhow::Result;
 use std::cell::RefCell;
 use std::io;
