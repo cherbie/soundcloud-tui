@@ -10,5 +10,5 @@ where
     W: Widget,
 {
     fn widget(&self) -> W;
-    fn area(&self) -> Rect;
+    fn area(&self, container: Rect) -> Rect;
 }

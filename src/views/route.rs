@@ -7,6 +7,7 @@ use tui::widgets::{Block, Borders};
 
 use crate::components::layout::{Dom, DomNode};
 use crate::components::{widgets::Button, Component};
+use crate::App;
 
 pub enum View {
     Splash,
@@ -54,13 +55,7 @@ impl Route {
         let height: u16 = std::cmp::min(4, canvas.height);
         let width: u16 = std::cmp::min(30, canvas.width);
 
-        let button = Button::new(Rect {
-            x: (canvas.width - width) / 2,
-            y: (canvas.height - height) / 2,
-            width,
-            height,
-        });
-        DomNode::add_child(self.dom.root.clone(), Box::new(button));
+        DomNode::add_child(self.dom.root.clone(), Box::new(Button::default()), canvas);
         Dom::render(f, &self.dom.root);
     }
 

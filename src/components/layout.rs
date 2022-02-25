@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cell::{Cell, RefCell};
 use std::option::Option;
 use std::rc::{Rc, Weak};
@@ -29,6 +30,7 @@ where
 {
     pub parent: Weak<RefCell<DomNode<W>>>,
     pub component: Option<Box<dyn Component<W>>>,
+    pub container: Cell<Rect>,
     pub children: RefCell<Vec<Rc<RefCell<DomNode<W>>>>>,
 }
 
@@ -39,10 +41,12 @@ where
     pub fn new(
         parent: Weak<RefCell<DomNode<W>>>,
         component: Option<Box<dyn Component<W>>>,
+        area: Rect,
     ) -> Self {
         DomNode {
             parent,
             component,
+            container: Cell::new(area),
             children: RefCell::new(Vec::new()),
         }
     }
@@ -51,6 +55,7 @@ where
         DomNode {
             parent: Weak::new(),
             component: None,
+            container: Cell::default(),
             children: RefCell::new(Vec::new()),
         }
     }
@@ -58,12 +63,14 @@ where
     pub fn add_child(
         parent_rc: Rc<RefCell<DomNode<W>>>,
         component: Box<dyn Component<W>>,
+        container: Rect,
     ) -> Rc<RefCell<DomNode<W>>> {
         let child = Rc::new(RefCell::new(DomNode::new(
             Rc::downgrade(&parent_rc),
             Some(component),
+            container,
         )));
-        let parent = parent_rc.borrow();
+        let parent = parent_rc.borrow_mut();
         parent.children.borrow_mut().push(child.clone());
 
         child
@@ -88,6 +95,7 @@ impl Default for Dom {
             root: Rc::new(RefCell::new(DomNode {
                 parent: Weak::new(),
                 component: Option::None,
+                container: Cell::default(),
                 children: RefCell::new(Vec::new()),
             })),
         }
@@ -114,7 +122,7 @@ impl Dom {
             let node = c.expect("RC DomNode deleted").borrow();
             match node.component.as_deref() {
                 Some(c) => {
-                    frame.render_widget(c.widget(), c.area());
+                    frame.render_widget(c.widget(), c.area(node.container.get()));
                 }
                 None => (),
             }
