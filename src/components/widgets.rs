@@ -1,52 +1,69 @@
 use std::cell::Cell;
 use tui::layout::Rect;
-use tui::style::{Color, Style};
 use tui::widgets::{Block, BorderType, Borders};
 
-use super::style::{Alignment, BoxStyle, FlexBox, Padding};
+use super::style::{Alignment, BorderStyle, BoxStyle, FlexBox};
 use super::Component;
 
 #[derive(Clone)]
 pub struct Button<'a> {
     widget: Block<'a>,
+    pub border_title: Option<&'a str>,
+    pub inner_text: Option<&'a str>,
     pub focused: Cell<bool>,
     pub style: Cell<BoxStyle>,
 }
 
 impl<'a> Default for Button<'a> {
     fn default() -> Self {
-        let widget = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::White))
-            .border_type(BorderType::Rounded)
-            .title("Button");
-
         Button {
-            widget,
+            widget: Block::default(),
+            border_title: None,
+            inner_text: None,
             focused: Cell::new(false),
-            style: Cell::new(BoxStyle {
-                height: 4,
-                width: 30,
-                min_height: 0,
-                min_width: 0,
-                padding: Padding::default(),
-                flex: FlexBox {
-                    justify_content: Alignment::Center,
-                    align_items: Alignment::Center,
-                },
-            }),
+            style: Cell::new(
+                *BoxStyle::default()
+                    .height(4)
+                    .width(30)
+                    .border_style(BorderStyle {
+                        fg: None,
+                        bg: None,
+                        decorations: None,
+                        borders: Borders::ALL,
+                        border_type: BorderType::Rounded,
+                    })
+                    .flex(FlexBox {
+                        justify_content: Alignment::Center,
+                        align_items: Alignment::Center,
+                    }),
+            ),
         }
     }
 }
 
 impl<'a> Component<Block<'a>> for Button<'a> {
     fn widget(&self) -> Block<'a> {
-        self.widget.clone()
+        let style = self.style.get();
+        let widget = self
+            .widget
+            .clone()
+            .borders(style.border_style.borders)
+            .border_style(style.border_style.into())
+            .border_type(style.border_style.border_type)
+            .style(style.text_style.into())
+            .title("Button");
+        if self.border_title.is_some() {
+            return widget.title(self.border_title.unwrap());
+        }
+        widget
     }
 
     fn area(&self, container: Rect) -> Rect {
         let style = self.style.get();
         let mut area = container;
+
+        area.height -= style.padding.top + style.padding.bottom;
+        area.width -= style.padding.left + style.padding.right;
 
         // height
         if style.height >= area.height {
