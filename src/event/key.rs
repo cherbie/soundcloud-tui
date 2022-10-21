@@ -20,7 +20,7 @@ impl fmt::Display for Key {
 
             Key::Ctrl(c) => write!(f, "<Ctrl+{}>", c),
 
-            Key::Alt(c) => write!(f, "<Ctrl+{}>", c),
+            Key::Alt(c) => write!(f, "<Alt+{}>", c),
 
             Key::Char(c) => write!(f, "<Char: {}>", c),
 
