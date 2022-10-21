@@ -7,7 +7,7 @@ use tui::layout::Rect;
 use tui::terminal::Frame;
 use tui::widgets::{Block, Widget};
 
-use super::Component;
+use crate::components::Component;
 
 pub struct DomNode<W>
 where

@@ -1,4 +1,4 @@
-use crate::components::layout::Dom;
+use super::layout::Dom;
 
 pub enum View {
     Splash,

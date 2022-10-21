@@ -1,9 +1,3 @@
-mod render;
-mod route;
-mod layout;
-
-use self::route::Route;
-use crate::event;
 use anyhow::Result;
 use std::cell::RefCell;
 use std::io;
@@ -11,7 +5,8 @@ use std::sync::Mutex;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::terminal::Terminal;
 
-pub use self::render::render;
+use self::route::Route;
+use crate::event;
 
 pub struct App<B>
 where
