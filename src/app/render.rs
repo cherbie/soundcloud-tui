@@ -1,6 +1,6 @@
+use super::layout::{Dom, DomNode};
 use super::route::View;
 use super::App;
-use super::layout::{Dom, DomNode};
 use crate::components::widgets::Button;
 use crate::event;
 

@@ -1,6 +1,6 @@
+mod layout;
 mod render;
 mod route;
-mod layout;
 
 use self::route::Route;
 use crate::event;
