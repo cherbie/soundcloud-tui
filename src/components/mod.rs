@@ -1,5 +1,5 @@
 pub mod component;
-pub mod style;
+mod style;
 pub mod widgets;
 
 pub use component::Component;

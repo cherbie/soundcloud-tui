@@ -1,9 +1,8 @@
+use crate::components::style::{Alignment, BorderStyle, BoxStyle, FlexBox};
+use crate::components::Component;
 use std::cell::Cell;
 use tui::layout::Rect;
 use tui::widgets::{Block, BorderType, Borders};
-
-use super::style::{Alignment, BorderStyle, BoxStyle, FlexBox};
-use super::Component;
 
 #[derive(Clone)]
 pub struct Button<'a> {
