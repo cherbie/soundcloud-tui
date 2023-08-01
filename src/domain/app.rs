@@ -1,19 +1,46 @@
-use super::layout::{Dom, DomNode};
-use super::route::View;
-use super::App;
+use crate::components::style::layout::{Dom, DomNode};
+use crate::components::views::View;
 use crate::components::widgets::Button;
 use crate::event;
 
+use super::router::Router;
 use anyhow::Result;
 use crossterm::execute;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use std::cell::RefCell;
 use std::io;
-use tui::backend::Backend;
+use std::sync::Mutex;
+use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::terminal::Frame;
+use tui::terminal::Terminal;
 use tui::widgets::{Block, Borders};
+
+pub struct App<B>
+where
+    B: Backend,
+{
+    terminal: RefCell<Terminal<B>>,
+    router: Router,
+    pub events: Mutex<event::Events>,
+}
+
+impl App<CrosstermBackend<io::Stdout>> {
+    pub fn new() -> Result<Self> {
+        let stdout = io::stdout();
+        let backend: CrosstermBackend<io::Stdout> = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+        terminal.hide_cursor()?;
+
+        Ok(App {
+            terminal: RefCell::new(terminal),
+            router: Router::default(),
+            events: Mutex::new(event::Events::default()),
+        })
+    }
+}
 
 pub async fn render<B>(app: &mut App<B>) -> Result<()>
 where
@@ -56,11 +83,13 @@ where
     }
 
     pub fn draw(&self) -> Result<()> {
-        self.terminal.borrow_mut().draw(|f| match self.route.view {
-            View::Splash => self.draw_splash_view(f),
-            View::Home => self.draw_home_view(f),
-            View::Login => self.draw_login_view(f),
-        })?;
+        self.terminal
+            .borrow_mut()
+            .draw(|f| match self.router.view {
+                View::Splash => self.draw_splash_view(f),
+                View::Home => self.draw_home_view(f),
+                View::Login => self.draw_login_view(f),
+            })?;
 
         Ok(())
     }
@@ -69,13 +98,13 @@ where
     where
         B: Backend,
     {
-        self.route.dom.root.borrow_mut().container.set(f.size());
+        self.router.dom.root.borrow_mut().container.set(f.size());
         DomNode::add_child(
-            self.route.dom.root.clone(),
+            self.router.dom.root.clone(),
             Box::new(Button::default()),
             None,
         );
-        Dom::render(f, &self.route.dom.root);
+        Dom::render(f, &self.router.dom.root);
     }
 
     fn draw_home_view(&self, f: &mut Frame<B>)

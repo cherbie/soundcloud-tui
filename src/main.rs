@@ -1,8 +1,8 @@
-mod app;
 mod components;
+mod domain;
 mod event;
 
-use crate::app::{render, App};
+use crate::domain::app::{render, App};
 use anyhow::Result;
 
 #[tokio::main]

@@ -1,5 +1,6 @@
 mod border;
 mod box_style;
+pub mod layout;
 mod text;
 
 pub use border::BorderStyle;

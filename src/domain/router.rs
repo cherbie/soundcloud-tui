@@ -1,19 +1,14 @@
-use super::layout::Dom;
+use crate::components::style::layout::Dom;
+use crate::components::views::View;
 
-pub enum View {
-    Splash,
-    Home,
-    Login,
-}
-
-pub struct Route {
+pub struct Router {
     pub view: View,
     pub dom: Dom,
 }
 
-impl Default for Route {
+impl Default for Router {
     fn default() -> Self {
-        Route {
+        Router {
             view: View::Splash,
             dom: Dom::default(),
         }
