@@ -111,7 +111,6 @@ where
     where
         B: Backend,
     {
-        ()
     }
 
     fn draw_login_view(&self, f: &mut Frame<B>)
