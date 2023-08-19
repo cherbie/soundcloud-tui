@@ -1,11 +1,11 @@
-mod events;
-mod input_reader;
+mod crossterm;
+mod event_server;
 mod key;
 
-#[cfg(test)]
-mod tests;
+pub enum Event<I> {
+    Input(I),
+    Tick,
+}
 
-pub use self::{
-    events::{Event, Events},
-    key::Key,
-};
+pub use self::crossterm::CrosstermEventServer;
+pub use event_server::EventServer;

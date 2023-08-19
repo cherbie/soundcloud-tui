@@ -1,7 +1,7 @@
 use crate::components::style::layout::{Dom, DomNode};
 use crate::components::views::View;
 use crate::components::widgets::Button;
-use crate::event;
+use crate::event::{CrosstermEventServer, Event, EventServer};
 
 use super::router::Router;
 use anyhow::Result;
@@ -11,7 +11,6 @@ use crossterm::terminal::{
 };
 use std::cell::RefCell;
 use std::io;
-use std::sync::Mutex;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::terminal::Frame;
@@ -24,7 +23,6 @@ where
 {
     terminal: RefCell<Terminal<B>>,
     router: Router,
-    pub events: Mutex<event::Events>,
 }
 
 impl App<CrosstermBackend<io::Stdout>> {
@@ -37,7 +35,6 @@ impl App<CrosstermBackend<io::Stdout>> {
         Ok(App {
             terminal: RefCell::new(terminal),
             router: Router::default(),
-            events: Mutex::new(event::Events::default()),
         })
     }
 }
@@ -48,18 +45,25 @@ where
 {
     app.start_ui()?;
 
+    let mut event_server = CrosstermEventServer::default();
+
+    event_server.listen();
+
     loop {
         app.draw()?;
 
-        match app.events.lock().unwrap().next()? {
-            event::Event::Input(key) => {
-                if key == event::Key::Ctrl('c') {
-                    return Ok(());
-                }
+        match event_server.next() {
+            Some(Event::Input(crossterm::event::Event::Key(_))) => {
+                break;
             }
-            event::Event::Tick => {}
+            Some(Event::Tick) => {}
+            _ => {}
         };
     }
+
+    event_server.stop();
+
+    Ok(())
 }
 
 impl<B> App<B>
