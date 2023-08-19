@@ -1,12 +1,10 @@
 use anyhow::Result;
 use std::cell::RefCell;
 use std::io;
-use std::sync::Mutex;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::terminal::Terminal;
 
 use super::router::Router;
-use crate::event;
 
 pub struct Context<B>
 where
@@ -14,7 +12,6 @@ where
 {
     terminal: RefCell<Terminal<B>>,
     router: Router,
-    pub events: Mutex<event::Events>,
 }
 
 impl Context<CrosstermBackend<io::Stdout>> {
@@ -27,7 +24,6 @@ impl Context<CrosstermBackend<io::Stdout>> {
         Ok(Context {
             terminal: RefCell::new(terminal),
             router: Router::default(),
-            events: Mutex::new(event::Events::default()),
         })
     }
 }
