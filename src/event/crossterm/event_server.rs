@@ -54,10 +54,14 @@ impl EventServer for CrosstermEventServer<crossterm::event::Event> {
 
         self.handle = Some(join_handle);
     }
+
+    fn stop(&mut self) {
+        self.stop()
+    }
 }
 
-impl<T> Drop for CrosstermEventServer<T> {
-    fn drop(&mut self) {
+impl<T> CrosstermEventServer<T> {
+    fn stop(&mut self) {
         {
             let mut exit_condition = self.exit_condition.lock().unwrap();
             *exit_condition = true;
@@ -70,6 +74,12 @@ impl<T> Drop for CrosstermEventServer<T> {
                 .join()
                 .expect("crossterm event thread join panic.");
         }
+    }
+}
+
+impl<T> Drop for CrosstermEventServer<T> {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

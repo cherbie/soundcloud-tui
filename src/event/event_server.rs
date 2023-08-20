@@ -14,10 +14,11 @@ impl Default for EventConfig {
     }
 }
 
-pub trait EventServer: Drop {
+pub trait EventServer {
     fn config(&self) -> EventConfig;
     fn listen<U, T>(&mut self)
     where
         U: utils::threads::Spawn,
         T: super::utils::EventPoll + super::utils::EventRead<Event = crossterm::event::Event>;
+    fn stop(&mut self);
 }
