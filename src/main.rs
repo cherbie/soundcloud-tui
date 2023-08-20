@@ -1,6 +1,7 @@
 mod components;
 mod domain;
 mod event;
+mod utils;
 
 use crate::domain::app::{render, App};
 use anyhow::Result;

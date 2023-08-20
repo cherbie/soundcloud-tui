@@ -1,3 +1,4 @@
+use crate::utils;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy)]
@@ -13,12 +14,10 @@ impl Default for EventConfig {
     }
 }
 
-#[cfg_attr(test, mockall::automock)]
-pub trait EventServer {
+pub trait EventServer: Drop {
     fn config(&self) -> EventConfig;
-    fn listen(&mut self);
-    fn stop(&mut self);
+    fn listen<U, T>(&mut self)
+    where
+        U: utils::threads::Spawn,
+        T: super::utils::EventPoll + super::utils::EventRead<Event = crossterm::event::Event>;
 }
-
-#[cfg(test)]
-mod tests {}

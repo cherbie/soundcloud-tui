@@ -1,7 +1,9 @@
 use crate::components::style::layout::{Dom, DomNode};
 use crate::components::views::View;
 use crate::components::widgets::Button;
-use crate::event::{CrosstermEventServer, Event, EventServer};
+use crate::event;
+use crate::event::EventServer;
+use crate::utils;
 
 use super::router::Router;
 use anyhow::Result;
@@ -45,23 +47,23 @@ where
 {
     app.start_ui()?;
 
-    let mut event_server = CrosstermEventServer::default();
+    let mut event_server = event::CrosstermEventServer::default();
 
-    event_server.listen();
+    event_server.listen::<utils::ThreadUtils, event::CrosstermEventUtils>();
 
     loop {
         app.draw()?;
 
         match event_server.next() {
-            Some(Event::Input(crossterm::event::Event::Key(_))) => {
+            Some(event::Event::Input(crossterm::event::Event::Key(_))) => {
                 break;
             }
-            Some(Event::Tick) => {}
+            Some(event::Event::Tick) => {}
             _ => {}
         };
     }
 
-    event_server.stop();
+    drop(event_server);
 
     Ok(())
 }
