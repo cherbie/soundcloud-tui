@@ -63,7 +63,7 @@ where
         };
     }
 
-    drop(event_server);
+    event_server.stop();
 
     Ok(())
 }
