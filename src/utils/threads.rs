@@ -1,29 +1,42 @@
 #[cfg(test)]
-mod test {
-    pub use mockall::predicate::*;
-    pub use mockall::*;
+pub use api::mock;
+pub use api::Spawn;
+pub use lib::Thread;
+
+mod api {
+    use std::thread;
+
+    #[cfg(test)]
+    use unimock::unimock;
+
+    #[cfg_attr(test, unimock(api=mock))]
+    pub trait Spawn {
+        fn spawn<F, T>(&self, f: F) -> thread::JoinHandle<T>
+        where
+            F: FnOnce() -> T + Send + 'static,
+            T: Send + 'static;
+    }
 }
-use std::thread;
 
-#[cfg(test)]
-use test::*;
+mod lib {
+    use super::api::Spawn;
+    use std::thread;
 
-#[cfg_attr(test, test::automock)]
-pub trait Spawn {
-    fn spawn<F, T>(f: F) -> thread::JoinHandle<T>
-    where
-        F: FnOnce() -> T + Send + 'static,
-        T: Send + 'static;
-}
+    pub struct Thread;
 
-pub struct ThreadUtils;
+    impl Default for Thread {
+        fn default() -> Self {
+            Self {}
+        }
+    }
 
-impl Spawn for ThreadUtils {
-    fn spawn<F, T>(f: F) -> thread::JoinHandle<T>
-    where
-        F: FnOnce() -> T + Send + 'static,
-        T: Send + 'static,
-    {
-        thread::spawn(f)
+    impl Spawn for Thread {
+        fn spawn<F, T>(&self, f: F) -> thread::JoinHandle<T>
+        where
+            F: FnOnce() -> T + Send + 'static,
+            T: Send + 'static,
+        {
+            thread::spawn(f)
+        }
     }
 }
