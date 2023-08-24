@@ -1,17 +1,20 @@
 use super::super::utils::*;
+use std::io::Result;
 use std::time;
 
-pub struct CrosstermEventUtils;
+#[derive(Clone, Copy, Debug)]
+pub struct CrosstermEventSource;
 
-impl EventPoll for CrosstermEventUtils {
-    fn poll(timeout: time::Duration) -> std::io::Result<bool> {
+impl EventPoll for CrosstermEventSource {
+    fn poll(&self, timeout: time::Duration) -> Result<bool> {
         crossterm::event::poll(timeout)
     }
 }
 
-impl EventRead for CrosstermEventUtils {
+impl EventRead for CrosstermEventSource {
     type Event = crossterm::event::Event;
-    fn read() -> std::io::Result<crossterm::event::Event> {
+
+    fn read(&self) -> Result<crossterm::event::Event> {
         crossterm::event::read()
     }
 }

@@ -3,9 +3,6 @@ mod domain;
 mod event;
 mod utils;
 
-#[cfg(test)]
-mod tests;
-
 use crate::domain::app::{render, App};
 use anyhow::Result;
 
