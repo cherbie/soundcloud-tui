@@ -49,7 +49,7 @@ where
 
     let mut event_server = event::CrosstermEventServer::default();
 
-    event_server.listen::<utils::ThreadUtils, event::CrosstermEventUtils>();
+    event_server.listen::<utils::threads::Thread, event::crossterm::CrosstermEventSource>();
 
     loop {
         app.draw()?;

@@ -1,107 +1,109 @@
-mod mock {
-    use crate::event::utils::{EventPoll, EventRead};
-    use crate::event::utils::{MockEventPoll, MockEventRead};
-    use std::any::{Any, TypeId};
-    use std::collections::HashMap;
-    use std::time;
-
-    struct MockInMemoryEventSource<T> {
-        poll_should_panic: bool,
-        poll_timeout: time::Duration,
-        poll_expect: std::io::Result<bool>,
-        read_should_panic: bool,
-        read_expect: std::io::Result<T>,
-    }
-
-    #[derive(Eq, Debug, PartialEq, Hash)]
-    enum MockStaticFnId {
-        Poll,
-        Read,
-    }
-
-    fn closure() -> &'static str {
-        "123"
-    }
-
-    mod poll_panic {
-        use super::MockInMemoryEventSource;
-        use crate::event::utils::{EventPoll, MockEventPoll};
-        use std::time;
-        use unimock::*;
-
-        impl<T> EventPoll for MockInMemoryEventSource<T> {
-            fn poll(&self, timeout: time::Duration) -> std::io::Result<bool> {
-                let clause = MockEventPoll::poll.each_call(matching!()).returns(Ok(true));
-                let mock = Unimock::new(clause);
-            }
-        }
-    }
-
-    impl EventRead for InMemoryEventSource {
-        type Event = char;
-        fn read() -> std::io::Result<Self::Event> {
-            Ok('c')
-        }
-    }
-}
-
 mod poll_for_event {
     use std::sync::mpsc;
     use std::time;
+    use unimock::*;
 
-    use crate::event::{utils::poll_for_event, Event};
-    use crate::tests::utils::Fixture;
-
-    struct EventUtilsFixture<T> {
-        tx: mpsc::Sender<Event<T>>,
-        rx: mpsc::Receiver<Event<T>>,
-        tick_rate: time::Duration,
-    }
-
-    impl<T> EventUtilsFixture<T> {
-        fn new(tick_rate: time::Duration) -> Self {
-            let (tx, rx) = mpsc::channel();
-            EventUtilsFixture { tx, rx, tick_rate }
-        }
-    }
-
-    impl<T> EventUtilsFixture<T> {
-        fn setup(&mut self) {}
-    }
-
-    impl<T> Fixture for EventUtilsFixture<T> {
-        fn setup(&mut self) {}
-
-        fn before_each(&mut self) {}
-
-        fn after_each(&mut self) {}
-
-        fn cleanup(&mut self) {}
-    }
+    use crate::event::{
+        utils::{poll_for_event, MockEventPoll, MockEventRead},
+        Event,
+    };
 
     #[test]
     fn test_poll_event() {
-        let mut fixture = EventUtilsFixture::<char>::new(time::Duration::from_millis(10));
-        fixture.setup();
+        let mock_event: char = 'c';
+        let mock_event_source = Unimock::new((
+            MockEventPoll::poll
+                .some_call(matching!(_))
+                .returns(Ok(true))
+                .once(),
+            MockEventRead::read
+                .some_call(matching!(_))
+                .returns(Ok(mock_event))
+                .once(),
+        ));
+        let (mock_sender, mock_receiver) = mpsc::channel();
+        let mock_tick_rate = time::Duration::from_millis(10);
 
-        fixture.before_each();
+        poll_for_event(&mock_event_source, &mock_sender, mock_tick_rate);
 
-        poll_for_event(&fixture.tx, fixture.tick_rate);
-
-        fixture.after_each();
-
-        fixture.cleanup();
+        let received_event = mock_receiver.try_recv();
+        assert!(received_event.is_ok(), "channel receiver error");
+        assert_eq!(
+            received_event,
+            Ok(Event::Input(mock_event)),
+            "incorrect Event::Input(char) received"
+        );
     }
 
     #[test]
-    fn test_tick_event_on_timeout() {}
+    fn test_tick_event_on_poll_timeout() {
+        let mock_event_source = Unimock::new(
+            MockEventPoll::poll
+                .some_call(matching!(_))
+                .returns(Ok(false))
+                .once(),
+        );
+        let (mock_sender, mock_receiver) = mpsc::channel();
+        let mock_timeout = time::Duration::from_millis(10);
+
+        poll_for_event(&mock_event_source, &mock_sender, mock_timeout);
+
+        let received_event = mock_receiver.recv_timeout(mock_timeout);
+        assert!(received_event.is_ok(), "channel receiver error");
+        assert_eq!(received_event, Ok(Event::Tick), "Event::Tick not received");
+    }
 
     #[test]
-    fn test_closed_channel_panic() {}
+    #[should_panic]
+    fn test_closed_channel_panic() {
+        let mock_event_source = Unimock::new((
+            MockEventPoll::poll
+                .some_call(matching!(_))
+                .returns(Ok(true))
+                .once(),
+            MockEventRead::read
+                .some_call(matching!(_))
+                .answers(|_| Ok('c'))
+                .once(),
+        ));
+        let (mock_sender, mock_receiver) = mpsc::channel();
+        let mock_tick_rate = time::Duration::from_millis(10);
+
+        drop(mock_receiver);
+        poll_for_event(&mock_event_source, &mock_sender, mock_tick_rate);
+    }
 
     #[test]
-    fn test_poll_panic() {}
+    #[should_panic(expected = "EventPoll has panicked")]
+    fn test_poll_panic() {
+        let mock_event_source = Unimock::new(
+            MockEventPoll::poll
+                .some_call(matching!(_))
+                .panics("EventPoll has panicked")
+                .once(),
+        );
+        let (mock_sender, _) = mpsc::channel();
+        let mock_tick_rate = time::Duration::from_millis(10);
+
+        poll_for_event(&mock_event_source, &mock_sender, mock_tick_rate);
+    }
 
     #[test]
-    fn test_event_read_panic() {}
+    #[should_panic(expected = "EventRead has panicked")]
+    fn test_event_read_panic() {
+        let mock_event_source = Unimock::new((
+            MockEventPoll::poll
+                .some_call(matching!(_))
+                .returns(Ok(true))
+                .once(),
+            MockEventRead::read
+                .some_call(matching!(_))
+                .panics("EventRead has panicked")
+                .once(),
+        ));
+        let (mock_sender, _) = mpsc::channel();
+        let mock_tick_rate = time::Duration::from_millis(10);
+
+        poll_for_event(&mock_event_source, &mock_sender, mock_tick_rate);
+    }
 }

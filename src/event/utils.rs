@@ -19,8 +19,8 @@ mod api {
 }
 
 mod lib {
-    use super::super::Event;
     use super::api;
+    use crate::event::Event;
     use std::sync;
     use std::time;
 

@@ -1,3 +1,4 @@
+use super::utils::{EventPoll, EventRead};
 use crate::utils;
 use std::time::Duration;
 
@@ -19,6 +20,6 @@ pub trait EventServer {
     fn listen<U, T>(&mut self)
     where
         U: utils::threads::Spawn,
-        T: super::utils::EventPoll + super::utils::EventRead<Event = crossterm::event::Event>;
+        T: EventPoll + EventRead<Event = crossterm::event::Event>;
     fn stop(&mut self);
 }

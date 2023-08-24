@@ -1,12 +1,17 @@
-use super::super::event_server::*;
-use super::super::utils::*;
-use super::super::Event;
-use crate::utils;
+use crate::event::{
+    event_server::EventConfig,
+    utils::{poll_for_event, EventPoll, EventRead},
+    Event, EventServer,
+};
+use crate::utils::threads::Spawn;
+
+use super::CrosstermEventSource;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 pub struct CrosstermEventServer<T> {
     config: EventConfig,
+    event_source: CrosstermEventSource,
     rx: mpsc::Receiver<Event<T>>,
     tx: mpsc::Sender<Event<T>>,
     handle: Option<thread::JoinHandle<()>>,
@@ -19,6 +24,7 @@ impl Default for CrosstermEventServer<crossterm::event::Event> {
 
         CrosstermEventServer {
             config: EventConfig::default(),
+            event_source: CrosstermEventSource,
             rx,
             tx,
             handle: None,
@@ -34,14 +40,14 @@ impl EventServer for CrosstermEventServer<crossterm::event::Event> {
 
     fn listen<T, U>(&mut self)
     where
-        T: utils::threads::Spawn,
-        U: super::super::utils::EventPoll
-            + super::super::utils::EventRead<Event = crossterm::event::Event>,
+        T: Spawn,
+        U: EventPoll + EventRead<Event = crossterm::event::Event>,
     {
         let event_tx = self.tx.clone();
         let tick_rate = self.config.tick_rate;
 
         let exit_condition = Arc::clone(&self.exit_condition);
+        let event_source = self.event_source;
 
         let join_handle = T::spawn(move || loop {
             {
@@ -49,7 +55,7 @@ impl EventServer for CrosstermEventServer<crossterm::event::Event> {
                     break;
                 }
             }
-            poll_for_event::<U, crossterm::event::Event>(&event_tx, tick_rate)
+            poll_for_event(&event_source, &event_tx, tick_rate)
         });
 
         self.handle = Some(join_handle);
