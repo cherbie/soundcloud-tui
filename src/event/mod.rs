@@ -9,8 +9,8 @@ pub enum Event<I> {
     Tick,
 }
 
-pub use self::crossterm::CrosstermEventServer;
-pub use event_server::EventServer;
+pub use self::crossterm::*;
+pub use event_server::*;
 
 #[cfg(test)]
 mod tests;

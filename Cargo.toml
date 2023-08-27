@@ -11,17 +11,12 @@ anyhow = "1.0.42"
 futures-core = "0.3.28"
 futures = "0.3.28"
 
-# dev
-async-trait = "0.1.72"
-tokio-test = "0.4.2"
-unimock = "0.5.3"
-
 [[bin]]
 bench = false
 path = "src/main.rs"
 name = "soundcloud-tui"
 
 [dev-dependencies]
-# async-trait = "0.1.72"
-# tokio-test = "0.4.2"
-# unimock = "0.5.3" TODO
+async-trait = "0.1.72"
+tokio-test = "0.4.2"
+unimock = "0.5.3"

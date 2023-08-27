@@ -47,9 +47,9 @@ where
 {
     app.start_ui()?;
 
-    let mut event_server = event::CrosstermEventServer::default();
+    let mut event_server = event::EventServerCore::default();
 
-    event_server.listen::<utils::threads::Thread, event::crossterm::CrosstermEventSource>();
+    event_server.listen(event::crossterm::CrosstermEventSource);
 
     loop {
         app.draw()?;

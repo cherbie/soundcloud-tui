@@ -1,11 +1,16 @@
-pub use api::Spawn;
-pub use lib::Thread;
+pub use api::*;
+pub use lib::*;
 
 mod api {
     use std::thread;
 
+    pub trait ThreadHandle<T> {
+        fn join(self) -> thread::Result<T>;
+        fn is_finished(&self) -> bool;
+    }
+
     pub trait Spawn {
-        fn spawn<F, T>(f: F) -> thread::JoinHandle<T>
+        fn spawn<F, T>(f: F) -> Box<dyn ThreadHandle<T>>
         where
             F: FnOnce() -> T + Send + 'static,
             T: Send + 'static;
@@ -13,7 +18,7 @@ mod api {
 }
 
 mod lib {
-    use super::api::Spawn;
+    use super::api::{Spawn, ThreadHandle};
     use std::thread;
 
     pub struct Thread;
@@ -25,12 +30,22 @@ mod lib {
     }
 
     impl Spawn for Thread {
-        fn spawn<F, T>(f: F) -> thread::JoinHandle<T>
+        fn spawn<F, T>(f: F) -> Box<dyn ThreadHandle<T>>
         where
             F: FnOnce() -> T + Send + 'static,
             T: Send + 'static,
         {
-            thread::spawn(f)
+            Box::new(thread::spawn(f))
+        }
+    }
+
+    impl<T> ThreadHandle<T> for std::thread::JoinHandle<T> {
+        fn is_finished(&self) -> bool {
+            self.is_finished()
+        }
+
+        fn join(self) -> thread::Result<T> {
+            self.join()
         }
     }
 }

@@ -1,8 +1,3 @@
-mod event_server;
-mod utils;
+mod event_source;
 
-#[cfg(test)]
-mod tests;
-
-pub use event_server::*;
-pub use utils::*;
+pub use event_source::*;
