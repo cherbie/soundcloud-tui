@@ -1,29 +1,36 @@
-use anyhow::Result;
-use std::cell::RefCell;
-use std::io;
-use tui::backend::{Backend, CrosstermBackend};
-use tui::terminal::Terminal;
+use super::router::Route;
 
-use super::router::Router;
+pub use api::AppContext;
+pub use lib::*;
 
-pub struct Context<B>
-where
-    B: Backend,
-{
-    terminal: RefCell<Terminal<B>>,
-    router: Router,
+mod api {
+    use super::*;
+
+    pub trait AppContext {
+        fn get_route(&self) -> Route;
+    }
 }
 
-impl Context<CrosstermBackend<io::Stdout>> {
-    pub fn new() -> Result<Self> {
-        let stdout = io::stdout();
-        let backend = CrosstermBackend::new(stdout);
-        let mut terminal = Terminal::new(backend)?;
-        terminal.hide_cursor()?;
+mod lib {
+    use super::*;
 
-        Ok(Context {
-            terminal: RefCell::new(terminal),
-            router: Router::default(),
-        })
+    pub struct Context {
+        route: Route,
+    }
+
+    /// AppContext ///
+    impl AppContext for Context {
+        fn get_route(&self) -> Route {
+            self.route
+        }
+    }
+
+    /// Default ///
+    impl Default for Context {
+        fn default() -> Self {
+            Context {
+                route: Route::Splash,
+            }
+        }
     }
 }
