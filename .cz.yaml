@@ -1,8 +1,0 @@
----
-commitizen:
-  major_version_zero: true
-  name: cz_conventional_commits
-  tag_format: v0.0.1
-  update_changelog_on_bump: true
-  version_provider: cargo
-  version_scheme: semver
