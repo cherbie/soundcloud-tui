@@ -1,31 +1,148 @@
-// use reqwest;
+use std::{io::ErrorKind, result::Result, str::FromStr};
 
-pub struct UserInfo<'a> {
-    id: &'a str,
-    full_name: &'a str,
-    last_name: &'a str,
-    username: &'a str,
+use reqwest;
+use serde_json;
+
+pub struct UserInfo {
+    id: String,
+    full_name: String,
+    last_name: String,
+    username: String,
 }
 
-pub fn get_user_info<'a, 'b>(token: &'b str) -> UserInfo<'a> {
-    return UserInfo {
-        id: "id",
-        full_name: "sdf",
-        last_name: "df",
-        username: "sdfd",
-    };
+impl TryFrom<serde_json::Value> for UserInfo {
+    type Error = std::io::Error;
+
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
+        if !value.is_object() {
+            return Err(Self::Error::new(
+                ErrorKind::InvalidData,
+                "value is not valid JSON",
+            ));
+        }
+
+        let id = match value["id"].as_str() {
+            Some(v) => v,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "id not defined",
+                ))
+            }
+        };
+        let full_name = match value["full_name"].as_str() {
+            Some(v) => v,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "full_name not defined",
+                ))
+            }
+        };
+        let last_name = match value["last_name"].as_str() {
+            Some(v) => v,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "last_name not defined",
+                ))
+            }
+        };
+        let username = match value["username"].as_str() {
+            Some(v) => v,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "username not defined",
+                ))
+            }
+        };
+
+        Ok(Self {
+            id: String::from(id),
+            full_name: String::from(full_name),
+            last_name: String::from(last_name),
+            username: String::from(username),
+        })
+    }
+}
+
+pub(crate) struct SoundCloudClientConfig {
+    base_url: String,
+    token: String,
+}
+
+pub async fn get_user_info<'a>(config: &SoundCloudClientConfig) -> std::io::Result<UserInfo> {
+    let me_api_url = config.base_url.clone() + "/me";
+    let response = reqwest::get(me_api_url)
+        .await
+        .map_err(|err| std::io::Error::new(ErrorKind::Other, err.to_string()))?;
+
+    match response.error_for_status_ref() {
+        Err(err) => return Err(std::io::Error::new(ErrorKind::Other, err.to_string())),
+        _ => {}
+    }
+
+    let response_text = response
+        .text()
+        .await
+        .map_err(|err| std::io::Error::new(ErrorKind::InvalidData, err.to_string()))?;
+    let response_body = serde_json::Value::from_str(&response_text)?;
+    let user_info = UserInfo::try_from(response_body)?;
+
+    Ok(user_info)
 }
 
 #[cfg(test)]
 mod test {
-    use super::get_user_info;
+    use super::*;
+    use mockito::{self, Mock, ServerGuard};
+    use serde_json::{self, json};
+    use tokio;
 
-    #[test]
-    fn test_get_user_info() {
-        let user_info = get_user_info("asdfdsf");
-        assert_eq!(user_info.id, "id");
-        assert_eq!(user_info.full_name, "sdf");
-        assert_eq!(user_info.last_name, "df");
-        assert_eq!(user_info.username, "sdfd");
+    async fn mock_soundcloud_me_api(server: &mut ServerGuard, body: &serde_json::Value) -> Mock {
+        let mock = server
+            .mock("GET", "/me")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(body.to_string())
+            .create_async()
+            .await;
+
+        mock
+    }
+
+    #[tokio::test]
+    async fn test_get_user_info() {
+        let mut server = mockito::Server::new_async().await;
+        let url = mockito::Server::url(&server);
+
+        let client_config = SoundCloudClientConfig {
+            base_url: url,
+            token: String::from("deadbeef"),
+        };
+
+        let expected_id = "user_id";
+        let expected_full_name = "full_name";
+        let expected_last_name = "last_name";
+        let expected_username = "username";
+        let expected_request_body = json!({"id": expected_id, "full_name": expected_full_name, "last_name": expected_last_name, "username": expected_username});
+
+        let soundcloud_me_mock = mock_soundcloud_me_api(&mut server, &expected_request_body).await;
+
+        let user_info_response = get_user_info(&client_config).await;
+
+        if user_info_response.is_err() {
+            assert!(false, "{}", user_info_response.err().unwrap())
+        }
+
+        let user_info = user_info_response.unwrap();
+
+        soundcloud_me_mock.assert();
+
+        assert_eq!(user_info.id, expected_id);
+        assert_eq!(user_info.full_name, expected_full_name);
+        assert_eq!(user_info.last_name, expected_last_name);
+        assert_eq!(user_info.username, expected_username);
     }
 }
