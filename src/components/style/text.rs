@@ -1,46 +1,35 @@
-use std::convert::{From, Into};
+use std::convert::From;
 use std::option::Option;
 use tui::style::{Color, Modifier, Style};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct TextStyle {
     pub fg: Option<Color>,
     pub bg: Option<Color>,
     pub decorations: Option<Modifier>,
 }
 
-impl Default for TextStyle {
-    fn default() -> Self {
-        TextStyle {
-            decorations: None,
-            fg: None,
-            bg: None,
-        }
-    }
-}
-
 impl From<Style> for TextStyle {
     fn from(style: Style) -> Self {
-        let mut text_style = TextStyle::default();
-        text_style.fg = style.fg;
-        text_style.bg = style.bg;
-        text_style.decorations = Some(style.add_modifier);
-
-        text_style
+        Self {
+            fg: style.fg,
+            bg: style.bg,
+            ..Default::default()
+        }
     }
 }
 
-impl Into<Style> for TextStyle {
-    fn into(self) -> Style {
+impl From<TextStyle> for Style {
+    fn from(val: TextStyle) -> Self {
         let style = Style::default();
-        if self.fg.is_some() {
-            style.fg(self.fg.unwrap());
+        if val.fg.is_some() {
+            style.fg(val.fg.unwrap());
         }
-        if self.bg.is_some() {
-            style.bg(self.bg.unwrap());
+        if val.bg.is_some() {
+            style.bg(val.bg.unwrap());
         }
-        if self.decorations.is_some() {
-            style.add_modifier(self.decorations.unwrap());
+        if val.decorations.is_some() {
+            style.add_modifier(val.decorations.unwrap());
         }
         style
     }

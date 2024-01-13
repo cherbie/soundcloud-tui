@@ -1,6 +1,3 @@
-pub use api::*;
-pub use lib::*;
-
 mod api {
     use std::thread;
 
@@ -21,13 +18,8 @@ mod lib {
     use super::api::{Spawn, ThreadHandle};
     use std::thread;
 
+    #[derive(Default)]
     pub struct Thread;
-
-    impl Default for Thread {
-        fn default() -> Self {
-            Self {}
-        }
-    }
 
     impl Spawn for Thread {
         fn spawn<F, T>(f: F) -> Box<dyn ThreadHandle<T>>
