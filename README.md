@@ -7,3 +7,7 @@ Terminal UI (_tui_) client that allows you to interact with your soundcloud play
 ## Solution Diagram
 
 ![Solution Diagram](./docs/assets/solution-diagram.png)
+
+## Resources
+
+- [HLS Protocol](https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis)
