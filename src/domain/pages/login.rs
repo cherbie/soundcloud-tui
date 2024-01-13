@@ -7,7 +7,7 @@ use tui::{
     widgets::{Block, Borders},
 };
 
-pub fn draw_login_view<B>(context: &dyn AppContext, f: &mut Frame<B>)
+pub fn draw_login_view<B>(_context: &dyn AppContext, f: &mut Frame<B>)
 where
     B: Backend,
 {

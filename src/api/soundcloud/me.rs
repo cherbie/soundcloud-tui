@@ -1,8 +1,6 @@
 use std::{io::ErrorKind, result::Result, str::FromStr};
 
-use reqwest;
-use serde_json;
-
+#[allow(dead_code)]
 pub struct UserInfo {
     id: String,
     full_name: String,
@@ -69,18 +67,19 @@ impl TryFrom<serde_json::Value> for UserInfo {
 
 pub(crate) struct SoundCloudClientConfig {
     base_url: String,
+    #[allow(dead_code)]
     token: String,
 }
 
+#[allow(dead_code)]
 pub async fn get_user_info<'a>(config: &SoundCloudClientConfig) -> std::io::Result<UserInfo> {
     let me_api_url = config.base_url.clone() + "/me";
     let response = reqwest::get(me_api_url)
         .await
         .map_err(|err| std::io::Error::new(ErrorKind::Other, err.to_string()))?;
 
-    match response.error_for_status_ref() {
-        Err(err) => return Err(std::io::Error::new(ErrorKind::Other, err.to_string())),
-        _ => {}
+    if let Err(err) = response.error_for_status_ref() {
+        return Err(std::io::Error::new(ErrorKind::Other, err.to_string()));
     }
 
     let response_text = response
@@ -98,18 +97,15 @@ mod test {
     use super::*;
     use mockito::{self, Mock, ServerGuard};
     use serde_json::{self, json};
-    use tokio;
 
     async fn mock_soundcloud_me_api(server: &mut ServerGuard, body: &serde_json::Value) -> Mock {
-        let mock = server
+        server
             .mock("GET", "/me")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(body.to_string())
             .create_async()
-            .await;
-
-        mock
+            .await
     }
 
     #[tokio::test]
@@ -130,13 +126,7 @@ mod test {
 
         let soundcloud_me_mock = mock_soundcloud_me_api(&mut server, &expected_request_body).await;
 
-        let user_info_response = get_user_info(&client_config).await;
-
-        if user_info_response.is_err() {
-            assert!(false, "{}", user_info_response.err().unwrap())
-        }
-
-        let user_info = user_info_response.unwrap();
+        let user_info = get_user_info(&client_config).await.unwrap();
 
         soundcloud_me_mock.assert();
 

@@ -9,7 +9,6 @@ pub enum Event<I> {
     Tick,
 }
 
-pub use self::crossterm::*;
 pub use event_server::*;
 
 #[cfg(test)]

@@ -83,7 +83,7 @@ mod lib {
 
             let join_handle = thread::spawn(move || loop {
                 {
-                    if *should_stop.lock().unwrap() == true {
+                    if *should_stop.lock().unwrap() {
                         break;
                     }
                 }

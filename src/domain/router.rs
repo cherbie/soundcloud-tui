@@ -6,6 +6,7 @@ use std::io::Result;
 use tui::{backend::Backend, terminal::Terminal};
 
 #[derive(Debug, Copy, Clone)]
+#[allow(dead_code)]
 pub enum Route {
     Splash,
     Home,

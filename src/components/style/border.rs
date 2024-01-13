@@ -1,4 +1,4 @@
-use std::convert::{From, Into};
+use std::convert::From;
 use std::option::Option;
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{BorderType, Borders};
@@ -14,7 +14,7 @@ pub struct BorderStyle {
 
 impl Default for BorderStyle {
     fn default() -> Self {
-        BorderStyle {
+        Self {
             borders: Borders::NONE,
             border_type: BorderType::Plain,
             fg: None,
@@ -26,27 +26,21 @@ impl Default for BorderStyle {
 
 impl From<Style> for BorderStyle {
     fn from(style: Style) -> Self {
-        let mut border_style = BorderStyle::default();
-        border_style.fg = style.fg;
-        border_style.bg = style.bg;
-        border_style.decorations = Some(style.add_modifier);
-
-        border_style
+        Self {
+            fg: style.fg,
+            bg: style.bg,
+            ..Default::default()
+        }
     }
 }
 
-impl Into<Style> for BorderStyle {
-    fn into(self) -> Style {
-        let style = Style::default();
-        if self.fg.is_some() {
-            style.fg(self.fg.unwrap());
+impl From<BorderStyle> for Style {
+    fn from(border_style: BorderStyle) -> Self {
+        Self {
+            fg: border_style.fg,
+            bg: border_style.bg,
+            add_modifier: border_style.decorations.unwrap(),
+            ..Default::default()
         }
-        if self.bg.is_some() {
-            style.bg(self.bg.unwrap());
-        }
-        if self.decorations.is_some() {
-            style.add_modifier(self.decorations.unwrap());
-        }
-        style
     }
 }

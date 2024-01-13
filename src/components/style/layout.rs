@@ -44,7 +44,7 @@ where
         let child = Rc::new(RefCell::new(DomNode::new(
             Rc::downgrade(&parent_rc),
             Some(component),
-            container.unwrap_or(Rect::default()),
+            container.unwrap_or_default(),
         )));
         let parent = parent_rc.borrow_mut();
         parent.children.borrow_mut().push(child.clone());
@@ -86,7 +86,7 @@ impl Dom {
     {
         let mut queue: Vec<Rc<RefCell<DomNode<W>>>> = Vec::new();
         queue.push(root.clone());
-        while queue.len() > 0 {
+        while !queue.is_empty() {
             let rcnode = queue.pop();
             if rcnode.is_none() {
                 continue;
@@ -96,22 +96,19 @@ impl Dom {
                 continue;
             }
             let node = c.expect("RC DomNode deleted").borrow();
-            match node.component.as_deref() {
-                Some(c) => {
-                    frame.render_widget(
-                        c.widget(),
-                        c.area(
-                            node.parent
-                                .upgrade()
-                                .as_deref()
-                                .unwrap()
-                                .borrow()
-                                .container
-                                .get(),
-                        ),
-                    );
-                }
-                None => (),
+            if let Some(c) = node.component.as_deref() {
+                frame.render_widget(
+                    c.widget(),
+                    c.area(
+                        node.parent
+                            .upgrade()
+                            .as_deref()
+                            .unwrap()
+                            .borrow()
+                            .container
+                            .get(),
+                    ),
+                );
             }
 
             queue.append(&mut node.children.borrow_mut());
