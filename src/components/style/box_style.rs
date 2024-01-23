@@ -1,3 +1,6 @@
+// TODO: implement
+#![allow(unused)]
+
 use std::convert::From;
 use std::option::Option;
 use tui::style::{Color, Style};

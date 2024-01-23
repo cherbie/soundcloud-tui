@@ -1,3 +1,6 @@
+// TODO: implement
+#![allow(unused)]
+
 mod hls;
 
 use rodio::{cpal::FromSample, OutputStream, OutputStreamHandle, Sample, Sink, Source};
