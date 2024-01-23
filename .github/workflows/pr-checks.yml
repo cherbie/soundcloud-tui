@@ -6,8 +6,11 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    container: ubuntu:latest
     steps:
-      - uses: actions/checkout@v2
+      - name: install default tooling
+        run: apt update -y && apt-get install -y curl build-essential pkg-config libssl-dev libasound2-dev
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -20,8 +23,11 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    container: ubuntu:latest
     steps:
-      - uses: actions/checkout@v2
+      - name: install default tooling
+        run: apt update -y && apt-get install -y curl build-essential pkg-config libssl-dev libasound2-dev
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -34,14 +40,17 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
+    container: ubuntu:latest
     steps:
-      - uses: actions/checkout@v2
+      - name: install default tooling
+        run: apt update -y && apt-get install -y curl build-essential pkg-config libssl-dev libasound2-dev
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - run: rustup component add rustfmt
+          components: rustfmt
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -50,14 +59,17 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    container: ubuntu:latest
     steps:
-      - uses: actions/checkout@v2
+      - name: install default tooling
+        run: apt update -y && apt-get install -y curl build-essential pkg-config libssl-dev libasound2-dev
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-      - run: rustup component add clippy
+          components: clippy
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
