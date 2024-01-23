@@ -1,3 +1,5 @@
+mod hls;
+
 use rodio::{cpal::FromSample, OutputStream, OutputStreamHandle, Sample, Sink, Source};
 use std::cell::Cell;
 
