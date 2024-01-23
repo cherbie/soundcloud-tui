@@ -97,26 +97,3 @@ impl<'a> Component<Block<'a>> for Button<'a> {
         area
     }
 }
-
-// impl<'a> Button<'a> {
-//     pub fn new() -> Self {
-//         let widget = Block::default()
-//             .borders(Borders::ALL)
-//             .border_style(Style::default().fg(Color::White))
-//             .border_type(BorderType::Rounded)
-//             .title("Button");
-
-//         Button {
-//             widget,
-//             focused: Cell::new(false),
-//             style: Cell::new(BoxStyle {
-//                 height: 4,
-//                 width: 30,
-//                 min_width: 0,
-//                 min_height: 0,
-//                 padding: Padding::default(),
-//                 flex: FlexBox::default(),
-//             }),
-//         }
-//     }
-// }
