@@ -2,6 +2,7 @@ mod api;
 mod components;
 mod domain;
 mod event;
+mod player;
 mod utils;
 
 use crate::domain::app;
