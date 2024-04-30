@@ -2,6 +2,8 @@
 #![allow(unused)]
 
 mod hls;
+#[cfg(test)]
+mod tests;
 
 use rodio::{cpal::FromSample, OutputStream, OutputStreamHandle, Sample, Sink, Source};
 use std::cell::Cell;
