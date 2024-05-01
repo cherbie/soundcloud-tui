@@ -12,10 +12,10 @@ mod event_server_core {
         let mock_event_source = Unimock::new((
             MockEventPoll::poll
                 .each_call(matching!())
-                .answers(|_| Ok(true)),
+                .answers(&|_,_| Ok(true)),
             MockEventRead::read
                 .each_call(matching!())
-                .answers(|_| Ok('c')),
+                .answers(&|_| Ok('c')),
         ));
 
         event_server.listen(mock_event_source.clone());

@@ -63,7 +63,7 @@ mod poll_for_event {
                 .once(),
             MockEventRead::read
                 .some_call(matching!(_))
-                .answers(|_| Ok('c'))
+                .returns(Ok('c'))
                 .once(),
         ));
         let (mock_sender, mock_receiver) = mpsc::channel();
