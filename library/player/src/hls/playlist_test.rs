@@ -1,86 +1,79 @@
 use crate::hls::*;
 
 mod tests {
-    use bytes::Bytes;
     use futures::StreamExt;
 
+    use super::playlist::*;
     use super::stubs;
-    use crate::hls::*;
 
     #[tokio::test]
-    #[ignore = "not implemented yet"]
-    async fn test_parse_m3u8_parse_err() {
-        let mock_m3u8_file = Bytes::from(stubs::MASTER_PLAYLIST_FILE);
-        let mut mock_fn = stubs::MockResolveUriFactoryFn::new();
-        mock_fn.set_bytes("invalid m3u8 file");
-        let outcome = parse_m3u8(mock_m3u8_file, mock_fn.call()).await;
-        assert!(outcome.is_ok(), "should parse m3u8 file");
-        // TODO: implement what to do with the streaming results
-        // FIXME: FutureStream not awaited on
-        assert_eq!(0, mock_fn.count(), "get_m3u8_factory was not called");
+    async fn test_process_master_playlist_parsing_err() {
+        // let mock_m3u8_file = Bytes::from(stubs::MASTER_PLAYLIST_FILE);
+        let mut fetch_fn = stubs::MockResolveUriFactoryFn::new();
+        fetch_fn.set_bytes("invalid m3u8 file");
+
+        let outcome = fetch_playlist(String::from("https://example.com"), fetch_fn.call()).await;
+        assert!(outcome.is_err(), "Expected error result, got ok",);
     }
 
     #[tokio::test]
-    async fn test_parse_m3u8_master_playlist_file() {
-        match m3u8_rs::parse_playlist(stubs::MASTER_PLAYLIST_FILE.as_bytes()) {
-            Result::Ok((_, m3u8_rs::Playlist::MasterPlaylist(pl))) => {
-                let mut mock_fn = stubs::MockResolveUriFactoryFn::new();
+    async fn test_process_master_playlist() {
+        match m3u8_rs::parse_master_playlist(stubs::MASTER_PLAYLIST_FILE.as_bytes()) {
+            Result::Ok((_, pl)) => {
+                let mut fetch_fn = stubs::MockResolveUriFactoryFn::new();
 
                 // return media playlist to avoid infinite loop
-                // FIXME: recursive call to master playlists results in stack overflow
-                mock_fn.set_bytes(stubs::MEDIA_PLAYLIST_FILE);
+                fetch_fn.set_bytes(stubs::MEDIA_PLAYLIST_FILE);
 
-                match parse_m3u8_master_playlist(pl, mock_fn.call()).await {
+                match parse_m3u8_master_playlist(pl, fetch_fn.call()).await {
                     Ok(_) => {
-                        assert_eq!(mock_fn.count(), 1, "get_m3u8_factory was not called");
+                        assert_eq!(fetch_fn.count(), 16, "fetch client was not called the correct number of times. Expected 16, got {}", fetch_fn.count());
                     }
                     Err(e) => {
                         assert!(false, "future has a result error: {}", e)
                     }
                 }
             }
-            Result::Ok(_) => {
-                assert!(false, "Expected master playlist. Received media playlist")
-            }
             Err(e) => {
-                assert!(false, "error parsing m3u8 master file: {}", e)
+                assert!(false, "unexpected testing error: {}", e)
             }
         }
     }
 
     #[tokio::test]
-    async fn test_new_media_playlist_stream_parsing_ok() {
-        match m3u8_rs::parse_playlist_res(stubs::MEDIA_PLAYLIST_FILE.as_bytes()) {
-            Result::Ok(m3u8_rs::Playlist::MediaPlaylist(pl)) => {
+    async fn test_media_playlist() {
+        match m3u8_rs::parse_media_playlist(stubs::MEDIA_PLAYLIST_FILE.as_bytes()) {
+            Ok((_, pl)) => {
                 let mock_fn = stubs::MockResolveUriFactoryFn::new();
-                let stream = new_media_playlist_stream(pl, mock_fn.call());
+                let stream = media_playlist_stream_factory(&pl, mock_fn.call());
                 let stream_len = stream.len();
                 assert!(stream_len > 0, "stream is empty");
                 stream
                     .for_each(|f| async move { assert!(f.is_ok(), "future is not okay") })
                     .await;
             }
-            _ => {
-                assert!(false, "error parsing m3u8 media file")
+            Err(e) => {
+                assert!(false, "unexpected testing error: {}", e)
             }
         }
     }
 
     #[tokio::test]
-    async fn test_new_media_playlist_stream_call_factory_fn() {
-        match m3u8_rs::parse_playlist_res(stubs::MEDIA_PLAYLIST_FILE.as_bytes()) {
-            Result::Ok(m3u8_rs::Playlist::MediaPlaylist(pl)) => {
-                let mock_fn = stubs::MockResolveUriFactoryFn::new();
-                let stream = new_media_playlist_stream(pl, mock_fn.call());
+    async fn test_media_playlist_call_factory_fn() {
+        match m3u8_rs::parse_media_playlist(stubs::MEDIA_PLAYLIST_FILE.as_bytes()) {
+            Ok((_, pl)) => {
+                let fetch_fn = stubs::MockResolveUriFactoryFn::new();
+                let stream = media_playlist_stream_factory(&pl, fetch_fn.call());
                 let n_items = stream.count().await;
                 assert_eq!(
-                    mock_fn.count() as usize,
+                    fetch_fn.count() as usize,
                     n_items,
-                    "get_m3u8_factory was not called the correct number of times"
+                    "fetch was not called the correct number of times. Expected {}",
+                    n_items
                 );
             }
-            _ => {
-                assert!(false, "error parsing m3u8 media file")
+            Err(e) => {
+                assert!(false, "unexpected testing error: {}", e)
             }
         }
     }
@@ -108,11 +101,10 @@ mod stubs {
             self.bytes = Bytes::from(String::from(str));
         }
 
-        pub fn call(&self) -> Box<ResolveUriFactoryFn<Bytes>> {
+        pub fn call(&self) -> Box<FetchUriFactoryFn<Bytes>> {
             let count = self.count.clone();
             let bytes = self.bytes.clone();
-            Box::new(move |url: &str| {
-                let url_str = String::from(url);
+            Box::new(move |_| {
                 let count = count.clone();
                 let bytes = bytes.clone();
                 Box::pin(async move {
