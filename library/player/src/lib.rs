@@ -1,6 +1,8 @@
-pub mod hls;
+mod device;
+mod internal;
 pub mod player;
-mod controller;
 
+#[cfg(test)]
+mod device_test;
 #[cfg(test)]
 mod player_test;

@@ -1,130 +1,132 @@
-use crate::hls::{track::Track, AsyncError};
+use super::device;
+use super::internal;
 
-use super::hls::track;
-use rodio::{cpal::FromSample, OutputStream, OutputStreamHandle, PlayError, Sample, Sink, Source};
-use tokio::{
-    sync::{
-        self,
-        mpsc::{error::SendError, Receiver, Sender},
-    },
-    task::JoinHandle,
-};
+use rodio;
+use tokio;
 
 trait TrackPlayerService {
-    fn enqueue_song(&mut self, song_uri: &str) -> Result<(), Box<dyn std::error::Error>>;
+    fn enqueue(&self, song_uri: &str);
     fn play(&self);
     fn pause(&self);
     fn skip(&self);
 }
 
+enum DeviceEvent {
+    Play,
+    Pause,
+    Skip,
+}
+
+enum PlayerEvent {
+    Device(DeviceEvent),
+    Enqueue(String),
+}
+
 pub struct TrackPlayer {
-    // device
-    sink: Sink,
-    sink_stream: Option<(OutputStream, OutputStreamHandle)>,
-
     // buffered songs
-    tracks_channel: Option<(Sender<Track>, Receiver<Track>)>,
+    event_tx: Box<tokio::sync::mpsc::Sender<PlayerEvent>>,
+    event_rx: Option<tokio::sync::mpsc::Receiver<PlayerEvent>>,
 
-    song_queue: Vec<String>,
-    song_current: Option<String>,
+    // TODO: error signal for worker? ... should probably be the join handle failure
 
-    // transcient services
-    track_lookup_service: Box<dyn track::TrackLookupService>,
+    // singletons
+    track_lookup_service: Box<dyn internal::TrackLookupService>,
+    device_service: Box<dyn device::DeviceService>,
 }
 
 impl Default for TrackPlayer {
     // TODO: deprecate me
     fn default() -> Self {
-        let (stream, stream_handle) = OutputStream::try_default().unwrap();
-        let sink = Sink::try_new(&stream_handle).unwrap();
-        sink.pause();
+        let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+        let sink = rodio::Sink::try_new(&stream_handle).unwrap();
+        let device = device::DeviceFactory::new(sink);
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<PlayerEvent>(5);
 
         TrackPlayer {
-            sink,
-            sink_stream: Some((stream, stream_handle)),
-            tracks_channel: Some(tokio::sync::mpsc::channel(5)),
-            song_queue: vec![],
-            song_current: None,
-            track_lookup_service: Box::new(track::TrackLookup::default()),
+            event_tx: Box::new(tx),
+            event_rx: Some(rx),
+            track_lookup_service: Box::new(internal::TrackLookupFactory::new()),
+            device_service: Box::new(device),
         }
     }
 }
-
-/// The difficulty lies in trying to call a tokio::spawn function to run async code ... and this listen to the result in a blocking fashion.
-///
 
 impl TrackPlayer {
-    /// TODO initialize source
-    fn init_source(&mut self) -> Result<(), PlayError> {
-        let source = rodio::source::Empty::new();
-
-        if let Some((_, stream_handle)) = &mut self.sink_stream {
-            return stream_handle.play_raw(source);
-        } else {
-            return Err(PlayError::NoDevice);
+    pub async fn start(&mut self) -> Result<(), internal::error::AsyncError> {
+        if self.event_rx.is_none() {
+            return Ok(());
         }
-    }
 
-    /// Async background fetch of the next song uri.
-    /// The mpsc channel will be populated with the song result
-    fn next_track_factory(
-        &mut self,
-    ) -> Result<JoinHandle<Result<(), SendError<Track>>>, AsyncError> {
-        if let Some(uri) = self.song_queue.pop() {
-            if let Some((tx, _)) = &self.tracks_channel {
-                let tx_child = tx.clone();
-                let track_fetch = self.track_lookup_service.fetch_track(&uri);
-
-                // async wait for hls resolution
-                // FIXME: task JoinHandle result not handled
-                return Ok(tokio::spawn(async move {
-                    // TODO: need to reserve capacity
-                    match track_fetch.await {
-                        Ok(track) => tx_child.send(track).await,
-                        Err(e) => {
-                            // TODO: need to send error information over channel
-                            // FIXME: not hanlding async fetch error
-                            print!("error fetching track info: {}", e);
-                            Ok(())
-                        }
-                    }
-                }));
-            } else {
-                // no channel configured
-                return Err(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "no channel configured",
-                )));
+        loop {
+            match self.event_rx.as_mut().unwrap().recv().await {
+                Some(PlayerEvent::Enqueue(song)) => {
+                    self.handle_enqueue_event(&song).await?;
+                }
+                Some(PlayerEvent::Device(event)) => {
+                    self.handle_device_event(&event).await?;
+                }
+                None => {
+                    break;
+                }
             }
-        } else {
-            // empty queue
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "empty song queue",
-            )));
         }
-    }
-}
-
-impl TrackPlayerService for TrackPlayer {
-    fn enqueue_song(&mut self, song_uri: &str) -> Result<(), Box<dyn std::error::Error>> {
-        self.song_queue.push(song_uri.to_string());
 
         Ok(())
     }
 
+    async fn handle_device_event(
+        &self,
+        event: &DeviceEvent,
+    ) -> Result<(), internal::error::AsyncError> {
+        match event {
+            DeviceEvent::Play => Ok(self.device_service.play()?),
+            DeviceEvent::Pause => Ok(self.device_service.pause()?),
+            DeviceEvent::Skip => Ok(self.device_service.skip()?),
+        }
+    }
+
+    async fn handle_enqueue_event(
+        &mut self,
+        song: &str,
+    ) -> Result<(), internal::error::AsyncError> {
+        // TODO: resolve track with this async service
+        let track = self.track_lookup_service.get_track(song).await?;
+        let decoders = track.to_decoders().map_err(|e| {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))
+        })?;
+
+        use rodio::Source;
+        let track_sample =
+            rodio::source::from_iter(Box::new(decoders.into_iter())).convert_samples();
+        let _ = self.device_service.enqueue(Box::new(track_sample));
+
+        Ok(())
+    }
+}
+
+impl TrackPlayerService for TrackPlayer {
+    fn enqueue(&self, song_uri: &str) {
+        let tx = self.event_tx.clone();
+        let song = song_uri.to_string();
+        tokio::spawn(async move { tx.send(PlayerEvent::Enqueue(song)).await });
+    }
+
     fn pause(&self) {
-        self.sink.pause();
+        let tx = self.event_tx.clone();
+        tokio::spawn(async move { tx.send(PlayerEvent::Device(DeviceEvent::Pause)).await });
     }
 
     fn play(&self) {
-        if self.song_current.is_none() {
-            self.skip();
-        }
-        self.sink.play();
+        let tx = self.event_tx.clone();
+        tokio::spawn(async move { tx.send(PlayerEvent::Device(DeviceEvent::Play)).await });
     }
 
     fn skip(&self) {
-        self.sink.skip_one();
+        let tx = self.event_tx.clone();
+        tokio::spawn(async move { tx.send(PlayerEvent::Device(DeviceEvent::Skip)).await });
     }
 }
