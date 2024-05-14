@@ -1,7 +1,10 @@
+use crate::internal::client;
+
 use super::device;
 use super::internal;
 
 use rodio;
+use std::sync::Arc;
 use tokio;
 
 trait TrackPlayerService {
@@ -30,6 +33,7 @@ pub struct TrackPlayer {
     // TODO: error signal for worker? ... should probably be the join handle failure
 
     // singletons
+    client_service: Arc<dyn internal::ReqClient>,
     track_lookup_service: Box<dyn internal::TrackLookupService>,
     device_service: Box<dyn device::DeviceService>,
 }
@@ -43,10 +47,16 @@ impl Default for TrackPlayer {
 
         let (tx, rx) = tokio::sync::mpsc::channel::<PlayerEvent>(5);
 
+        let client_service = Arc::new(internal::ClientFactory::new());
+
         TrackPlayer {
             event_tx: Box::new(tx),
             event_rx: Some(rx),
-            track_lookup_service: Box::new(internal::TrackLookupFactory::new()),
+
+            client_service: client_service.clone(),
+            track_lookup_service: Box::new(internal::TrackLookupFactory::new(
+                client_service.clone(),
+            )),
             device_service: Box::new(device),
         }
     }
