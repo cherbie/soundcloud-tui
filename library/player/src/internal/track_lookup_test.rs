@@ -2,8 +2,8 @@ use super::track_lookup::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::stubs::*;
+    use super::*;
     use mockall::predicate::*;
 
     #[tokio::test]

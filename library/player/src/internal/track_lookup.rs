@@ -8,8 +8,9 @@ pub trait TrackLookupService {
 pub struct TrackLookupFactory;
 
 impl TrackLookupFactory {
-    pub fn new<C>(client: std::sync::Arc<C>) -> impl TrackLookupService 
-    where C: client::ReqClient + Send + Sync + 'static
+    pub fn new<C>(client: std::sync::Arc<C>) -> impl TrackLookupService
+    where
+        C: client::ReqClient + Send + Sync + 'static,
     {
         TrackLookupCore::new(client)
     }

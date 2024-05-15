@@ -4,7 +4,7 @@ use std::{
     sync::mpsc,
 };
 
-use bytes::{buf::Chain, Buf, Bytes};
+use bytes::Bytes;
 use futures::{FutureExt, StreamExt};
 use m3u8_rs::{MediaPlaylist, MediaSegment};
 use rodio::{source, Decoder, Sample, Source};
@@ -14,19 +14,35 @@ use std::sync;
 use super::*;
 
 #[derive(Debug)]
-struct TrackSample {
+pub struct TrackSample {
     sample: Bytes,
 }
 
 impl TrackSample {
-    pub fn new(sample: Bytes) -> Self {
-        Self { sample }
+    fn new(bytes: Bytes) -> Self {
+        Self { sample: bytes }
     }
+}
 
-    fn to_decoder(&self) -> Result<Decoder<io::Cursor<Bytes>>, Box<dyn std::error::Error>> {
-        let cursor = io::Cursor::new(self.sample.clone());
+impl TryInto<Decoder<io::Cursor<Bytes>>> for TrackSample {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_into(self) -> Result<Decoder<io::Cursor<Bytes>>, Self::Error> {
+        let cursor = io::Cursor::new(self.sample);
         let decoder = Decoder::new(cursor)?;
         Ok(decoder)
+    }
+}
+
+impl From<Bytes> for TrackSample {
+    fn from(bytes: Bytes) -> Self {
+        TrackSample::new(bytes)
+    }
+}
+
+impl Into<Bytes> for TrackSample {
+    fn into(self) -> Bytes {
+        self.sample
     }
 }
 
@@ -38,13 +54,13 @@ pub struct Track {
 
 impl Track {
     pub fn to_decoders(
-        &self,
+        self,
     ) -> Result<Vec<Decoder<io::Cursor<Bytes>>>, Box<dyn std::error::Error>> {
-        let mut decoders: Vec<Decoder<io::Cursor<Bytes>>> = Vec::new();
-        for sample in self.samples.iter() {
-            let decoder = sample.to_decoder()?;
-            decoders.push(decoder);
-        }
+        let decoders = self
+            .samples
+            .into_iter()
+            .map(|sample| sample.try_into())
+            .collect::<Result<Vec<Decoder<io::Cursor<Bytes>>>, Box<dyn std::error::Error>>>()?;
 
         Ok(decoders)
     }

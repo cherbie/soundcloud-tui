@@ -9,7 +9,7 @@ use super::hls;
 #[cfg_attr(test, automock)]
 pub trait ReqClient {
     fn fetch(&self, uri: String) -> hls::PinFuture<Bytes>;
-} 
+}
 
 pub struct ClientFactory;
 
