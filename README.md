@@ -8,6 +8,7 @@ Terminal UI (_tui_) client that allows you to interact with your soundcloud play
 
 ![Solution Diagram](./docs/assets/solution-diagram.png)
 
+```toml
 [dependencies]
 crossterm = "0.27"
 tui = { version = "0.19", default-features = false, features = ['crossterm'] }
@@ -26,3 +27,4 @@ bytes = "1.6.0"
 async-trait = "0.1.72"
 tokio-test = "0.4.2"
 unimock = "0.6.5"
+```
