@@ -4,6 +4,9 @@ mod playlist_test;
 pub mod track;
 #[cfg(test)]
 mod track_test;
+mod ts;
+#[cfg(test)]
+pub mod ts_test;
 
 use std::pin::Pin;
 
