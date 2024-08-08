@@ -3,7 +3,6 @@ mod cli;
 mod cli_test;
 
 use anyhow::Result;
-use player::TrackPlayer;
 use rodio::Sink;
 
 #[tokio::main]
@@ -21,8 +20,8 @@ async fn app(uri: &str) -> Result<()> {
     let (_stream, stream_handle) = rodio::OutputStream::try_default()?;
     let sink = Sink::try_new(&stream_handle).unwrap();
 
-    let decoder = 
-    stream_handle.play_once();
+    let source = rodio::source::SineWave::new(440.0);
+    sink.append(source);
 
     sink.sleep_until_end();
     Ok(())
